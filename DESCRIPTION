@@ -1,0 +1,13 @@
+Package: DS
+Type: Package
+Title: Some Stuff for Kap EDS
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Aditya", "Khambekar"
+    )
+  )
+Description: Currently just ANOVA stuff
+License: MIT
+Encoding: UTF-8
+LazyData: true
