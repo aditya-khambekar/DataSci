@@ -1,8 +1,4 @@
 loadData <- function(dataset) {
-  if (!require("Stat2Data", quietly = TRUE)) {
-    install.packages("Stat2Data")
-  }
-
   library("Stat2Data")
   data(list = dataset)
 }
@@ -27,11 +23,7 @@ aov.residualsd <- function(formula, data) {
 
 aov.residualplot <- function(formula, data, point.col = "blue", line.col = "grey",
                              line.lty = 2, ...) {
-  if (!require("lattice", quietly = TRUE)) {
-    install.packages("lattice")
-    library("lattice")
-  }
-
+  library("lattice")
   exp.var <- all.vars(formula)[2]
 
   data.aov <- aov(formula, data = data)
