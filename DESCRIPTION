@@ -5,7 +5,8 @@ Version: 0.1.0
 Authors@R: c(
     person(
       "Aditya", "Khambekar",
-        email = "adityakhambekar9@gmail.com"
+        email = "adityakhambekar9@gmail.com",
+role = "cre"
     )
   )
 Description: Currently just ANOVA stuff
