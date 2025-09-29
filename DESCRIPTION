@@ -4,7 +4,8 @@ Title: Some Stuff for Kap EDS
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Aditya", "Khambekar"
+      "Aditya", "Khambekar",
+        email = "adityakhambekar9@gmail.com"
     )
   )
 Description: Currently just ANOVA stuff
