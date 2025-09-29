@@ -40,10 +40,8 @@ aov.residualplot <- function(formula, data, point.col = "blue", line.col = "grey
 
 aov.xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
                        line.lty = 2, ...) {
-  if (!require("lattice", quietly = TRUE)) {
-    install.packages("lattice")
     library("lattice")
-  }
+  
 
   response.var <- all.vars(formula)[1]
 
