@@ -41,7 +41,7 @@ aov.residualplot <- function(formula, data, point.col = "blue", line.col = "grey
 aov.xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
                        line.lty = 2, ...) {
     library("lattice")
-  
+
 
   response.var <- all.vars(formula)[1]
 
@@ -125,4 +125,15 @@ aov.summary.fillTable <- function(df.groups = NA, df.error = NA, df.total = NA,
   )
 
   return(anova.table)
+}
+
+aov.dataset.summary <- function(formula, data){
+  exp = all.vars(formula)[2]
+  res = all.vars(formula)[1]
+
+  means = tapply(data[[res]], data[[exp]], mean)
+  sds = tapply(data[[res]], data[[exp]], sd)
+  lengths = tapply(data[[res]], data[[exp]], length)
+
+  return(cbind(means, sds, lengths))
 }
