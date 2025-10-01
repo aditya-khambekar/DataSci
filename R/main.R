@@ -142,37 +142,38 @@ aov.dataset.summary <- function(formula, data){
   return(cbind(means, sds, lengths))
 }
 
-# FIX: The R6 (or setRefClass) definition must be defined *before* the generator function.
-# Also, the generator function must return the NEW object.
 ak.aov = setRefClass(
     "ak.aov", # Recommended to name the class for clarity
     fields = list(aov = "aov"), # Declare field type
     methods = list(
+        # FIX: Access aov field via self$aov
         residualsnormal = function(){
-          qqnorm(aov$residuals)
-          qqline(aov$residuals)
+          qqnorm(self$aov$residuals)
+          qqline(self$aov$residuals)
         },
+        # FIX: Access aov field via self$aov
         residualsd = function() {
           # Use the stored aov object's call for formula and model.frame for data
           residual.df <- data.frame(
-            Group = model.frame(aov)[[all.vars(aov$call$formula)[2]]],
-            Residual = aov$residuals
+            Group = model.frame(self$aov)[[all.vars(self$aov$call$formula)[2]]],
+            Residual = self$aov$residuals
           )
           result <- aggregate(Residual ~ Group, data = residual.df, FUN = sd)
           colnames(result) <- c("Group", "SD")
 
           return(result)
         },
+        # FIX: Access aov field via self$aov
         dataset.summary = function(){
           # Correctly call aov.dataset.summary with formula and data extracted from the aov object
-          return(aov.dataset.summary(aov$call$formula, model.frame(aov)))
+          return(aov.dataset.summary(self$aov$call$formula, model.frame(self$aov)))
         },
+        # This method was already correct in its use of self$aov
         xyplot = function(point.col = "blue", line.col = "grey",
                              line.lty = 2, ...){
           library("lattice")
 
           # 1. Use accessors on the stored object (self$aov)
-          #    This resolves previous "invalid model" errors
           plot_formula <- formula(self$aov)
           plot_data <- model.frame(self$aov)
 
@@ -180,7 +181,6 @@ ak.aov = setRefClass(
           response.var <- all.vars(plot_formula)[1]
 
           # 3. FIX: Ensure the response variable is treated as numeric for the mean calculation
-          #    (aov usually works fine, but model.frame might retain the original type)
           response_values <- as.numeric(plot_data[[response.var]])
 
           grand.mean <- mean(response_values, na.rm = TRUE)
