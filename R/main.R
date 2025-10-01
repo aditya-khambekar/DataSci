@@ -139,7 +139,7 @@ aov.dataset.summary <- function(formula, data){
 }
 
 ak.aov <- function(formula, data) {
-    return(ak.aov$new(aov(formula, data)
+    return(ak.aov$new(aov(formula, data)))
 }
 
 ak.aov = setRefClass(
