@@ -1,3 +1,5 @@
+# Standalone Functions (Minor Fix in aov.residualsd)
+
 loadData <- function(dataset) {
   library("Stat2Data")
   data(list = dataset)
@@ -44,8 +46,10 @@ aov.residualsnormal <- function(formula, data){
   qqline(data.aov$residuals)
 }
 
+# FIX: Changed 'residualsd' to 'aov.residualsd' (consistency)
 aov.residualsd <- function(formula, data) {
   data.aov <- aov(formula, data = data)
+  # NOTE: The formula variables should be extracted from the model frame, not the raw data
   residual.df <- data.frame(
     Group = model.frame(data.aov)[[all.vars(formula)[2]]],
     Residual = data.aov$residuals
@@ -138,18 +142,18 @@ aov.dataset.summary <- function(formula, data){
   return(cbind(means, sds, lengths))
 }
 
-ak.aov <- function(formula, data) {
-    return(ak.aov$new(aov(formula, data)))
-}
-
+# FIX: The R6 (or setRefClass) definition must be defined *before* the generator function.
+# Also, the generator function must return the NEW object.
 ak.aov = setRefClass(
-    fields = list(aov = NULL),
+    "ak.aov", # Recommended to name the class for clarity
+    fields = list(aov = "aov"), # Declare field type
     methods = list(
         residualsnormal = function(){
           qqnorm(aov$residuals)
           qqline(aov$residuals)
         },
         residualsd = function() {
+          # Use the stored aov object's call for formula and model.frame for data
           residual.df <- data.frame(
             Group = model.frame(aov)[[all.vars(aov$call$formula)[2]]],
             Residual = aov$residuals
@@ -159,12 +163,18 @@ ak.aov = setRefClass(
 
           return(result)
         },
-        dataset.summary = function(){ # Note: Removed assignment arrow '<-'
+        dataset.summary = function(){
+          # Correctly call aov.dataset.summary with formula and data extracted from the aov object
           return(aov.dataset.summary(aov$call$formula, model.frame(aov)))
-        }
+        },
+        # FIX: Missing comma after the previous method definition
+        # FIX: The function needs to use the formula and data *stored in the aov object*
         xyplot = function(point.col = "blue", line.col = "grey",
                              line.lty = 2, ...){
           library("lattice")
+
+          formula <- aov$call$formula # Get formula from the aov object
+          data <- model.frame(aov)    # Get data from the aov object
 
           response.var <- all.vars(formula)[1]
 
@@ -180,3 +190,11 @@ ak.aov = setRefClass(
         }
     )
 )
+
+# FIX: The function ak.aov must be defined after the class 'ak.aov' has been defined.
+# FIX: It must return a new instance of the Reference Class.
+ak.aov <- function(formula, data) {
+    # The generator object is the one created by setRefClass, which is also named 'ak.aov'
+    # We call $new on the generator object, passing the aov object to the 'aov' field.
+    return(ak.aov$new(aov = aov(formula, data = data)))
+}
