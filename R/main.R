@@ -167,20 +167,25 @@ ak.aov = setRefClass(
           # Correctly call aov.dataset.summary with formula and data extracted from the aov object
           return(aov.dataset.summary(aov$call$formula, model.frame(aov)))
         },
-        # FIX: Missing comma after the previous method definition
-        # FIX: The function needs to use the formula and data *stored in the aov object*
         xyplot = function(point.col = "blue", line.col = "grey",
                              line.lty = 2, ...){
           library("lattice")
 
-          formula <- aov$call$formula # Get formula from the aov object
-          data <- model.frame(aov)    # Get data from the aov object
+          # 1. Use accessors on the stored object (self$aov)
+          #    This resolves previous "invalid model" errors
+          plot_formula <- formula(self$aov)
+          plot_data <- model.frame(self$aov)
 
-          response.var <- all.vars(formula)[1]
+          # 2. Extract the response variable name
+          response.var <- all.vars(plot_formula)[1]
 
-          grand.mean <- mean(data[[response.var]], na.rm = TRUE)
+          # 3. FIX: Ensure the response variable is treated as numeric for the mean calculation
+          #    (aov usually works fine, but model.frame might retain the original type)
+          response_values <- as.numeric(plot_data[[response.var]])
 
-          xyplot(formula, data = data,
+          grand.mean <- mean(response_values, na.rm = TRUE)
+
+          xyplot(plot_formula, data = plot_data, # Use the model frame and formula
                  panel = function(x, y, col, ...) {
                    panel.xyplot(x, y, col = point.col, ...)
                    panel.abline(h = grand.mean, col = line.col, lty = line.lty)
