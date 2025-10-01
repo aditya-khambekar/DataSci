@@ -193,7 +193,7 @@ ak.aov = setRefClass(
 
 # FIX: The function ak.aov must be defined after the class 'ak.aov' has been defined.
 # FIX: It must return a new instance of the Reference Class.
-ak.aov <- function(formula, data) {
+create.aov <- function(formula, data) {
     # The generator object is the one created by setRefClass, which is also named 'ak.aov'
     # We call $new on the generator object, passing the aov object to the 'aov' field.
     return(ak.aov$new(aov = aov(formula, data = data)))
