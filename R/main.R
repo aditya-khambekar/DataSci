@@ -1,11 +1,9 @@
-# Standalone Functions (Minor Fix in aov.residualsd)
-
 loadData <- function(dataset) {
   library("Stat2Data")
   data(list = dataset)
 }
 
-aov.residualplot <- function(formula, data, point.col = "blue", line.col = "grey",
+residualplot <- function(formula, data, point.col = "blue", line.col = "grey",
                              line.lty = 2, ...) {
   library("lattice")
   exp.var <- all.vars(formula)[2]
@@ -22,10 +20,9 @@ aov.residualplot <- function(formula, data, point.col = "blue", line.col = "grey
   )
 }
 
-aov.xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
+xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
                        line.lty = 2, ...) {
     library("lattice")
-
 
   response.var <- all.vars(formula)[1]
 
@@ -40,16 +37,14 @@ aov.xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
   )
 }
 
-aov.residualsnormal <- function(formula, data){
+residualsnormal <- function(formula, data){
   data.aov <- aov(formula, data = data)
   qqnorm(data.aov$residuals)
   qqline(data.aov$residuals)
 }
 
-# FIX: Changed 'residualsd' to 'aov.residualsd' (consistency)
-aov.residualsd <- function(formula, data) {
+residualsd <- function(formula, data) {
   data.aov <- aov(formula, data = data)
-  # NOTE: The formula variables should be extracted from the model frame, not the raw data
   residual.df <- data.frame(
     Group = model.frame(data.aov)[[all.vars(formula)[2]]],
     Residual = data.aov$residuals
@@ -60,7 +55,7 @@ aov.residualsd <- function(formula, data) {
   return(result)
 }
 
-aov.df <- function(n.obs, n.groups) {
+df <- function(n.obs, n.groups) {
   data.frame(
     Type = c("Groups", "Error"),
     df = c(n.groups - 1, n.obs - n.groups)
@@ -131,7 +126,7 @@ aov.summary.fillTable <- function(df.groups = NA, df.error = NA, df.total = NA,
   return(anova.table)
 }
 
-aov.dataset.summary <- function(formula, data){
+dataset.summary <- function(formula, data){
   exp = all.vars(formula)[2]
   res = all.vars(formula)[1]
 
@@ -142,64 +137,70 @@ aov.dataset.summary <- function(formula, data){
   return(cbind(means, sds, lengths))
 }
 
-ak.aov = setRefClass(
-    "ak.aov", # Recommended to name the class for clarity
-    fields = list(aov = "aov"), # Declare field type
-    methods = list(
-        # FIX: Access aov field via self$aov
-        residualsnormal = function(){
-          qqnorm(self$aov$residuals)
-          qqline(self$aov$residuals)
-        },
-        # FIX: Access aov field via self$aov
-        residualsd = function() {
-          # Use the stored aov object's call for formula and model.frame for data
-          residual.df <- data.frame(
-            Group = model.frame(self$aov)[[all.vars(self$aov$call$formula)[2]]],
-            Residual = self$aov$residuals
-          )
-          result <- aggregate(Residual ~ Group, data = residual.df, FUN = sd)
-          colnames(result) <- c("Group", "SD")
+aov.residualplot <- function(aov.obj, point.col = "blue", line.col = "grey",
+                                  line.lty = 2, ...) {
+  library("lattice")
 
-          return(result)
-        },
-        # FIX: Access aov field via self$aov
-        dataset.summary = function(){
-          # Correctly call aov.dataset.summary with formula and data extracted from the aov object
-          return(aov.dataset.summary(self$aov$call$formula, model.frame(self$aov)))
-        },
-        # This method was already correct in its use of self$aov
-        xyplot = function(point.col = "blue", line.col = "grey",
-                             line.lty = 2, ...){
-          library("lattice")
+  formula <- formula(aov.obj)
+  data <- model.frame(aov.obj)
+  exp.var <- all.vars(formula)[2]
 
-          # 1. Use accessors on the stored object (self$aov)
-          plot_formula <- formula(self$aov)
-          plot_data <- model.frame(self$aov)
+  xyplot(aov.obj$residuals ~ data[[exp.var]], data = data,
+         panel = function(x, y, col, ...) {
+           panel.xyplot(x, y, col = point.col, ...)
+           panel.abline(h = 0, col = line.col, lty = line.lty)
+         },
+         xlab = exp.var,
+         ylab = "Residuals",
+  )
+}
 
-          # 2. Extract the response variable name
-          response.var <- all.vars(plot_formula)[1]
+aov.xyplot <- function(aov.obj, point.col = "blue", line.col = "grey",
+                            line.lty = 2, ...) {
+  library("lattice")
 
-          # 3. FIX: Ensure the response variable is treated as numeric for the mean calculation
-          response_values <- as.numeric(plot_data[[response.var]])
+  formula <- formula(aov.obj)
+  data <- model.frame(aov.obj)
+  response.var <- all.vars(formula)[1]
 
-          grand.mean <- mean(response_values, na.rm = TRUE)
+  grand.mean <- mean(data[[response.var]], na.rm = TRUE)
 
-          xyplot(plot_formula, data = plot_data, # Use the model frame and formula
-                 panel = function(x, y, col, ...) {
-                   panel.xyplot(x, y, col = point.col, ...)
-                   panel.abline(h = grand.mean, col = line.col, lty = line.lty)
-                 },
-                 ...
-          )
-        }
-    )
-)
+  xyplot(formula, data = data,
+         panel = function(x, y, col, ...) {
+           panel.xyplot(x, y, col = point.col, ...)
+           panel.abline(h = grand.mean, col = line.col, lty = line.lty)
+         },
+         ...
+  )
+}
 
-# FIX: The function ak.aov must be defined after the class 'ak.aov' has been defined.
-# FIX: It must return a new instance of the Reference Class.
-create.aov <- function(formula, data) {
-    # The generator object is the one created by setRefClass, which is also named 'ak.aov'
-    # We call $new on the generator object, passing the aov object to the 'aov' field.
-    return(ak.aov$new(aov = aov(formula, data = data)))
+aov.residualsnormal <- function(aov.obj){
+  qqnorm(aov.obj$residuals)
+  qqline(aov.obj$residuals)
+}
+
+aov.residualsd <- function(aov.obj) {
+  formula <- formula(aov.obj)
+  residual.df <- data.frame(
+    Group = model.frame(aov.obj)[[all.vars(formula)[2]]],
+    Residual = aov.obj$residuals
+  )
+  result <- aggregate(Residual ~ Group, data = residual.df, FUN = sd)
+  colnames(result) <- c("Group", "SD")
+
+  return(result)
+}
+
+aov.dataset.summary <- function(aov.obj){
+  formula <- formula(aov.obj)
+  data <- model.frame(aov.obj)
+
+  exp = all.vars(formula)[2]
+  res = all.vars(formula)[1]
+
+  means = tapply(data[[res]], data[[exp]], mean)
+  sds = tapply(data[[res]], data[[exp]], sd)
+  lengths = tapply(data[[res]], data[[exp]], length)
+
+  return(cbind(means, sds, lengths))
 }
