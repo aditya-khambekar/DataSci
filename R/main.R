@@ -263,6 +263,7 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
 
   class(results) <- "TukeyHSD"
   attr(results, "conf.level") <- conf.level
+  attr(results, "ordered") <- FALSE
   return(results)
 }
 
