@@ -204,3 +204,65 @@ aov.dataset.summary <- function(aov.obj){
 
   return(cbind(means, sds, lengths))
 }
+
+TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
+  if (!inherits(aov.obj, "aov"))
+    stop("This function requires an object of class 'aov'.")
+
+  mf <- model.frame(aov.obj)
+  response <- mf[[1]]
+
+  if (is.null(which))
+    which <- names(mf)[-1]
+
+  results <- list()
+
+  for (term in which) {
+    group <- mf[[term]]
+    if (!is.factor(group))
+      stop(paste("Term", term, "is not a factor."))
+
+    means <- tapply(response, group, mean)
+    sizes <- tapply(response, group, length)
+
+    mse <- deviance(aov.obj) / df.residual(aov.obj)
+
+    combs <- combn(levels(group), 2)
+    ncomp <- ncol(combs)
+    comp.names <- apply(combs, 2, function(x) paste(x, collapse = "-"))
+
+    diffs <- numeric(ncomp)
+    lwr <- numeric(ncomp)
+    upr <- numeric(ncomp)
+    pvals <- numeric(ncomp)
+
+    df <- df.residual(aov.obj)
+    qcrit <- qtukey(conf.level, length(levels(group)), df) / sqrt(2)
+
+    for (i in 1:ncomp) {
+      g1 <- combs[1, i]
+      g2 <- combs[2, i]
+      diffs[i] <- means[g1] - means[g2]
+      se <- sqrt(mse / 2 * (1 / sizes[g1] + 1 / sizes[g2]))
+      lwr[i] <- diffs[i] - qcrit * se
+      upr[i] <- diffs[i] + qcrit * se
+      qval <- abs(diffs[i]) / se
+      pvals[i] <- 1 - ptukey(qval * sqrt(2), length(levels(group)), df)
+    }
+
+    res <- data.frame(
+      diff = diffs,
+      lwr = lwr,
+      upr = upr,
+      p.adj = pvals,
+      row.names = comp.names
+    )
+
+    results[[term]] <- res
+  }
+
+  class(results) <- "TukeyHSD"
+  attr(results, "conf.level") <- conf.level
+  return(results)
+}
+
