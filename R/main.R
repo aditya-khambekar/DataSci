@@ -1,5 +1,3 @@
-# Standalone Functions (Minor Fix in aov.residualsd)
-
 loadData <- function(dataset) {
   library("Stat2Data")
   data(list = dataset)
@@ -26,7 +24,6 @@ aov.xyplot <- function(formula, data, point.col = "blue", line.col = "grey",
                        line.lty = 2, ...) {
     library("lattice")
 
-
   response.var <- all.vars(formula)[1]
 
   grand.mean <- mean(data[[response.var]], na.rm = TRUE)
@@ -46,10 +43,8 @@ aov.residualsnormal <- function(formula, data){
   qqline(data.aov$residuals)
 }
 
-# FIX: Changed 'residualsd' to 'aov.residualsd' (consistency)
 aov.residualsd <- function(formula, data) {
   data.aov <- aov(formula, data = data)
-  # NOTE: The formula variables should be extracted from the model frame, not the raw data
   residual.df <- data.frame(
     Group = model.frame(data.aov)[[all.vars(formula)[2]]],
     Residual = data.aov$residuals
@@ -143,17 +138,14 @@ aov.dataset.summary <- function(formula, data){
 }
 
 ak.aov = setRefClass(
-    "ak.aov", # Recommended to name the class for clarity
-    fields = list(aov = "aov"), # Declare field type
+    "ak.aov",
+    fields = list(aov = "aov"),
     methods = list(
-        # FIX: Access aov field via self$aov
         residualsnormal = function(){
           qqnorm(self$aov$residuals)
           qqline(self$aov$residuals)
         },
-        # FIX: Access aov field via self$aov
         residualsd = function() {
-          # Use the stored aov object's call for formula and model.frame for data
           residual.df <- data.frame(
             Group = model.frame(self$aov)[[all.vars(self$aov$call$formula)[2]]],
             Residual = self$aov$residuals
@@ -163,29 +155,23 @@ ak.aov = setRefClass(
 
           return(result)
         },
-        # FIX: Access aov field via self$aov
         dataset.summary = function(){
-          # Correctly call aov.dataset.summary with formula and data extracted from the aov object
           return(aov.dataset.summary(self$aov$call$formula, model.frame(self$aov)))
         },
-        # This method was already correct in its use of self$aov
         xyplot = function(point.col = "blue", line.col = "grey",
                              line.lty = 2, ...){
           library("lattice")
 
-          # 1. Use accessors on the stored object (self$aov)
           plot_formula <- formula(self$aov)
           plot_data <- model.frame(self$aov)
 
-          # 2. Extract the response variable name
           response.var <- all.vars(plot_formula)[1]
 
-          # 3. FIX: Ensure the response variable is treated as numeric for the mean calculation
           response_values <- as.numeric(plot_data[[response.var]])
 
           grand.mean <- mean(response_values, na.rm = TRUE)
 
-          xyplot(plot_formula, data = plot_data, # Use the model frame and formula
+          xyplot(plot_formula, data = plot_data,
                  panel = function(x, y, col, ...) {
                    panel.xyplot(x, y, col = point.col, ...)
                    panel.abline(h = grand.mean, col = line.col, lty = line.lty)
@@ -196,10 +182,6 @@ ak.aov = setRefClass(
     )
 )
 
-# FIX: The function ak.aov must be defined after the class 'ak.aov' has been defined.
-# FIX: It must return a new instance of the Reference Class.
 create.aov <- function(formula, data) {
-    # The generator object is the one created by setRefClass, which is also named 'ak.aov'
-    # We call $new on the generator object, passing the aov object to the 'aov' field.
     return(ak.aov$new(aov = aov(formula, data = data)))
 }
