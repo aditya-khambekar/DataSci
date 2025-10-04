@@ -205,7 +205,7 @@ aov.dataset.summary <- function(aov.obj){
   return(cbind(means, sds, lengths))
 }
 
-TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
+TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95, ordered = FALSE) {
   if (!inherits(aov.obj, "aov"))
     stop("This function requires an object of class 'aov'.")
 
@@ -226,6 +226,8 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
     sizes <- tapply(response, group, length)
 
     mse <- deviance(aov.obj) / df.residual(aov.obj)
+    df <- df.residual(aov.obj)
+    nlev <- length(levels(group))
 
     combs <- combn(levels(group), 2)
     ncomp <- ncol(combs)
@@ -236,8 +238,7 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
     upr <- numeric(ncomp)
     pvals <- numeric(ncomp)
 
-    df <- df.residual(aov.obj)
-    qcrit <- qtukey(conf.level, length(levels(group)), df) / sqrt(2)
+    qcrit <- qtukey(conf.level, nlev, df) / sqrt(2)
 
     for (i in 1:ncomp) {
       g1 <- combs[1, i]
@@ -247,7 +248,7 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
       lwr[i] <- diffs[i] - qcrit * se
       upr[i] <- diffs[i] + qcrit * se
       qval <- abs(diffs[i]) / se
-      pvals[i] <- 1 - ptukey(qval * sqrt(2), length(levels(group)), df)
+      pvals[i] <- 1 - ptukey(qval * sqrt(2), nlev, df)
     }
 
     res <- data.frame(
@@ -261,9 +262,12 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95) {
     results[[term]] <- res
   }
 
+  # Assign attributes that the built-in plot() method expects
   class(results) <- "TukeyHSD"
   attr(results, "conf.level") <- conf.level
-  attr(results, "ordered") <- FALSE
+  attr(results, "ordered") <- ordered
+
   return(results)
 }
+
 
