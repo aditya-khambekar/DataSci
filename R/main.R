@@ -270,4 +270,39 @@ TukeyHSD <- function(aov.obj, which = NULL, conf.level = 0.95, ordered = FALSE) 
   return(results)
 }
 
+aov2.df = function(nA, nB, nObs) {
+  if (nA * nB == nObs) return (c(nA -1, nB - 1, nA * nB))
+  return (c(nA - 1, nB - 1, nA * nB * (nObs -1)))
+}
 
+anscombe.plot = function(formula, data, xlim = 1000, ylim = 1000,
+                         main = "", xlab = "", ylab = "", legendstr = "topleft", verbose = FALSE, roundSlope = 3, flip = FALSE) {
+  v = all.vars(formula)
+  
+  if (main == "") main = paste(v[1], "Blocked By", v[2])
+  
+  plot(0, 0, type = 'n',
+       xlim = c(0, xlim), ylim = c(0, ylim),
+       xlab = xlab, ylab = ylab, main = main)
+  abline(0, 1, col = 'grey')
+  
+  c = combn(u <- sort(unique(data[[v[2]]])), 2)
+  colors = rainbow(ncol(c))
+  by = !flip
+  
+  for (i in 1:ncol(c)) {
+    abline(coe <- coefficients(lm(
+      data[[v[1]]][data[[v[2]]] == c[ifelse(by, 1, 2), i]] ~
+        data[[v[1]]][data[[v[2]]] == c[ifelse(by, 2, 1), i]]
+    )),
+    col = colors[i])
+    points(data[[v[1]]][data[[v[2]]] == c[ifelse(by, 1, 2), i]] ~
+           data[[v[1]]][data[[v[2]]] == c[ifelse(by, 2, 1), i]],
+           col = colors[i], pch = i)
+    if (verbose) print(paste("Slope of", paste(u[c[1, i]], u[c[2, i]], sep = "-"), "=", round(coe[2], roundSlope)))
+  }
+  
+  legend(legendstr,
+         legend = apply(c, 2, function(x) paste(u[x[1]], u[x[2]], sep = "-")),
+         col = colors, pch = 1:ncol(c), lty = 1)
+}
