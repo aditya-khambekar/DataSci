@@ -21,6 +21,34 @@ loadData <- function(dataset) {
   data(list = best_match, package = "Stat2Data", envir = parent.frame())
 }
 
+f <- function(fmt, envir = parent.frame()) {
+  matches <- gregexpr("\\{[^}]+\\}", fmt, perl = TRUE)
+  
+  exprs <- regmatches(fmt, matches)[[1]]
+  if (length(exprs) == 0) return(fmt)
+  
+  values <- sapply(exprs, function(e) {
+    expr <- sub("^\\{|\\}$", "", e)  # remove { and }
+    val <- try(eval(parse(text = expr), envir = envir), silent = TRUE)
+    if (inherits(val, "try-error")) {
+      sprintf("<ERROR: %s>", expr)
+    } else {
+      as.character(val)
+    }
+  }, USE.NAMES = FALSE)
+  
+  for (i in seq_along(exprs)) {
+    fmt <- sub_fixed(exprs[i], values[i], fmt)
+  }
+  
+  fmt
+}
+
+sub_fixed <- function(pattern, replacement, x) {
+  parts <- strsplit(x, pattern, fixed = TRUE)[[1]]
+  paste0(paste0(parts, collapse = replacement))
+}
+
 residualplot <- function(formula, data, point.col = "blue", line.col = "grey",
                              line.lty = 2, ...) {
   library("lattice")
