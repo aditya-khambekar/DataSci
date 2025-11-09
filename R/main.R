@@ -1,6 +1,24 @@
 loadData <- function(dataset) {
-  library("Stat2Data")
-  data(list = dataset)
+  if (!requireNamespace("Stat2Data", quietly = TRUE)) {
+    stop("Package 'Stat2Data' is not installed. Please install it first.")
+  }
+
+  available_data <- data(package = "Stat2Data")$results[, "Item"]
+  
+  exact_match <- available_data[tolower(available_data) == tolower(dataset)]
+  
+  if (length(exact_match) == 1) {
+    data(list = exact_match, package = "Stat2Data", envir = parent.frame())
+    return(get(exact_match, envir = parent.frame()))
+  }
+  
+  distances <- adist(tolower(dataset), tolower(available_data))
+  best_match_index <- which.min(distances)
+  best_match <- available_data[best_match_index]
+  best_distance <- distances[best_match_index]
+  
+  
+  data(list = best_match, package = "Stat2Data", envir = parent.frame())
 }
 
 residualplot <- function(formula, data, point.col = "blue", line.col = "grey",
